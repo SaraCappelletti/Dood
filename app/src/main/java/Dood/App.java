@@ -1,7 +1,10 @@
 package Dood;
 
 import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.model.Container;
+import com.github.dockerjava.api.model.HostConfig;
+import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
@@ -36,8 +39,20 @@ public class App {
         dockerClient.pingCmd().exec();*/
 
         DockerClient dockerClient = DockerClientImpl.getInstance(config, httpClient);
+        String image = "saracappelletti/digital-twin-with-configuration-files";
+        CreateContainerResponse container = dockerClient.createContainerCmd(image)
+                .exec();
+
+        // Avvio del container
+        dockerClient.startContainerCmd(container.getId()).exec();
+
+        // Stampa dell'ID del container appena creato
+        System.out.println("Container ID: " + container.getId());
+
+        // Chiudi il client Docker
+        dockerClient.close();
         // Esegui il comando "docker ps -a"
-        List<Container> containers = dockerClient.listContainersCmd().withShowSize(true).exec();
+        /*List<Container> containers = dockerClient.listContainersCmd().withShowSize(true).exec();
 
         // Stampa informazioni sui container
         System.out.println("Container List:");
@@ -50,7 +65,7 @@ public class App {
         }
 
         // Chiudi la connessione al demone Docker
-        dockerClient.close();
+        dockerClient.close();*/
         
     }
 
