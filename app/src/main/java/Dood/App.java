@@ -2,7 +2,6 @@ package Dood;
 
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.CreateContainerResponse;
-import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
@@ -13,7 +12,6 @@ import com.github.dockerjava.transport.DockerHttpClient;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.List;
 
 public class App {
     public static void main(String[] args) throws IOException {
