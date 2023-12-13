@@ -10,10 +10,16 @@ import com.github.dockerjava.transport.DockerHttpClient;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Scanner;
 
 public class App {
     public static void main(String[] args) throws IOException {
         System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "error");
+
+        // Utilizza Scanner per leggere l'input dell'utente
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Inserisci il nome dell'immagine Docker da creare: ");
+        String image = scanner.nextLine();
 
         DockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder()
                 .withDockerHost("tcp://host.docker.internal:2375").build();
@@ -27,7 +33,7 @@ public class App {
                 .build();
 
         DockerClient dockerClient = DockerClientImpl.getInstance(config, httpClient);
-        String image = "saracappelletti/digital-twin-with-configuration-files";
+        //String image = "saracappelletti/digital-twin-with-configuration-files";
         CreateContainerResponse container = dockerClient.createContainerCmd(image)
                 .exec();
 
@@ -37,8 +43,8 @@ public class App {
         // Stampa dell'ID del container appena creato
         System.out.println("Container ID: " + container.getId());
 
-        // Chiudi il client Docker
         dockerClient.close();
+        scanner.close();
         
     }
 
