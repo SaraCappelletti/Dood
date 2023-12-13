@@ -18,7 +18,7 @@ public class App {
         System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "error");
 
         DockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder()
-                .withDockerHost("tcp://localhost:2375").build();
+                .withDockerHost("tcp://host.docker.internal:2375").build();
 
         DockerHttpClient httpClient = new ApacheDockerHttpClient.Builder()
                 .dockerHost(config.getDockerHost())
