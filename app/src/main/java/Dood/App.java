@@ -2,8 +2,6 @@ package Dood;
 
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.CreateContainerResponse;
-import com.github.dockerjava.api.model.HostConfig;
-import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
@@ -28,14 +26,6 @@ public class App {
                 .responseTimeout(Duration.ofSeconds(45))
                 .build();
 
-        /*DockerHttpClient.Request request = DockerHttpClient.Request.builder()
-                .method(DockerHttpClient.Request.Method.GET)
-                .path("/_ping")
-                .build();
-
-        System.out.println(request);
-        dockerClient.pingCmd().exec();*/
-
         DockerClient dockerClient = DockerClientImpl.getInstance(config, httpClient);
         String image = "saracappelletti/digital-twin-with-configuration-files";
         CreateContainerResponse container = dockerClient.createContainerCmd(image)
@@ -49,21 +39,6 @@ public class App {
 
         // Chiudi il client Docker
         dockerClient.close();
-        // Esegui il comando "docker ps -a"
-        /*List<Container> containers = dockerClient.listContainersCmd().withShowSize(true).exec();
-
-        // Stampa informazioni sui container
-        System.out.println("Container List:");
-        for (Container container : containers) {
-            System.out.println("ID: " + container.getId());
-            System.out.println("Image: " + container.getImage());
-            System.out.println("Command: " + container.getCommand());
-            // ... altre informazioni sui container
-            System.out.println("----------");
-        }
-
-        // Chiudi la connessione al demone Docker
-        dockerClient.close();*/
         
     }
 
