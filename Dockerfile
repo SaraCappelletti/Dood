@@ -11,5 +11,8 @@ COPY ./app/build/distributions/app.zip /app
 WORKDIR /app
 RUN unzip app.zip -d app
 
+# Espone la porta 8081
+EXPOSE 8081
+
 # Specifica il comando di avvio dell'applicazione
 CMD ["sh", "./app/app/bin/app"]

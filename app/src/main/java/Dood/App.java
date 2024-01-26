@@ -23,12 +23,17 @@ import java.util.concurrent.Executors;
 
 public class App {
     private static final ExecutorService executor = Executors.newFixedThreadPool(10);
+    private static String dockerHost = System.getenv("DOCKER_HOST");
 
     public static void main(String[] args) throws Exception {
         System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "error");
 
+        if (dockerHost == null || dockerHost.isEmpty()) {
+            dockerHost = "tcp://localhost:2375";
+        }
+
         DockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder()
-                .withDockerHost("tcp://host.docker.internal:2375").build();
+                .withDockerHost(dockerHost).build(); //"tcp://host.docker.internal:2375"
 
         DockerHttpClient httpClient = new ApacheDockerHttpClient.Builder()
                 .dockerHost(config.getDockerHost())
