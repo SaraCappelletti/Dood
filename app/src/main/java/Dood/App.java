@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.CreateContainerResponse;
+import com.github.dockerjava.api.command.PullImageResultCallback;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
@@ -68,6 +69,10 @@ public class App {
                                 String tags = jsonNode.get("tags").asText();
                                 String dtPort = jsonNode.get("digitalTwinPort").asText();
                                 System.out.println("Image name: " + dtImage);
+
+                                dockerClient.pullImageCmd(dtImage)
+                                        .exec(new PullImageResultCallback())
+                                        .awaitCompletion();
 
                                 CreateContainerResponse container = dockerClient.createContainerCmd(dtImage)
                                         .exec();
