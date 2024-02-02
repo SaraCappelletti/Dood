@@ -13,12 +13,8 @@ import com.github.dockerjava.transport.DockerHttpClient;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -26,7 +22,9 @@ public class App {
     private static final ExecutorService executor = Executors.newFixedThreadPool(10);
     private static String dockerHost = System.getenv("DOCKER_HOST");
 
-    public static void main(String[] args) throws Exception {
+    private static final Map<String, DigitalTwinInfo> requestedDigitalTwins = new HashMap<>();
+
+    public static void main(String[] args) {
         System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "error");
 
         if (dockerHost == null || dockerHost.isEmpty()) {
@@ -46,74 +44,91 @@ public class App {
 
         DockerClient dockerClient = DockerClientImpl.getInstance(config, httpClient);
 
-        HttpHandler httpHandler = new HttpHandler() {
-            @Override
-            public void handleRequest(HttpServerExchange exchange) throws Exception {
-                try {
-                    // Usa AsyncContext per gestire la lettura asincrona
-                    exchange.dispatch(executor, () -> {
-                        exchange.getRequestReceiver().receiveFullString((exchange1, message) -> {
-                            String requestState = "";
-                            try {
-                                String requestBody = message;
+        HttpHandler httpHandler = exchange -> {
+            try {
+                // Usa AsyncContext per gestire la lettura asincrona
+                exchange.dispatch(executor, () -> exchange.getRequestReceiver()
+                        .receiveFullString((exchange1, message) -> {
+                    String requestState = "";
+                    try {
+                        String requestBody = message;
 
-                                // Converte la stringa JSON in un oggetto Java
-                                ObjectMapper objectMapper = new ObjectMapper();
-                                JsonNode jsonNode = objectMapper.readTree(requestBody);
-                                requestState = "ACCEPTED";
+                        // Converte la stringa JSON in un oggetto Java
+                        ObjectMapper objectMapper = new ObjectMapper();
+                        JsonNode jsonNode = objectMapper.readTree(requestBody);
+                        requestState = "ACCEPTED";
+                        Map<String, Object> jsonResponse = new HashMap<>();
 
-                                // Estrai i valori da jsonNode
-                                String dtImage = jsonNode.get("digitalTwinImage").asText();
-                                String dtId = jsonNode.get("digitalTwinId").asText();
-                                String ownerId = jsonNode.get("ownerId").asText();
-                                String tags = jsonNode.get("tags").asText();
-                                String dtPort = jsonNode.get("digitalTwinPort").asText();
-                                System.out.println("Image name: " + dtImage);
-
-                                dockerClient.pullImageCmd(dtImage)
-                                        .exec(new PullImageResultCallback())
-                                        .awaitCompletion();
-
-                                CreateContainerResponse container = dockerClient.createContainerCmd(dtImage)
-                                        .exec();
-
-                                // Avvio del container
-                                dockerClient.startContainerCmd(container.getId()).exec();
-                                requestState = "FULLFILLED";
-
-                                // Stampa dell'ID del container appena creato
-                                /*exchange.getResponseSender().send("Container ID: " + container.getId());*/
-                                System.out.println("Container ID: " + container.getId());
-
-                                Map<String, Object> deploymentDescriptor = new LinkedHashMap<>();
-                                deploymentDescriptor.put("digitalTwinImage", dtImage);
-                                deploymentDescriptor.put("digitalTwinId", dtId);
-                                deploymentDescriptor.put("ownerId", ownerId);
-                                deploymentDescriptor.put("tags", tags);
-                                deploymentDescriptor.put("digitalTwinPort", dtPort);
-
-                                Map<String, Object> jsonResponse = new HashMap<>();
-                                jsonResponse.put("containerId", container.getId());
-                                jsonResponse.put("deploymentDescriptor", deploymentDescriptor);
-                                jsonResponse.put("requestState", requestState);
-                                jsonResponse.put("digitalTwinURI", "http://localhost:" + dtPort + "/" + dtId);
-
-                                String jsonString = objectMapper.writeValueAsString(jsonResponse);
-
-                                exchange.getResponseSender().send(jsonString);
-                            } catch (Exception e) {
-                                requestState = "REFUSED";
-                                e.printStackTrace();
-                                exchange.setStatusCode(500); // Internal Server Error
-                                exchange.getResponseSender().send("Errore durante l'elaborazione della richiesta");
+                        if (jsonNode.has("digitalTwinImage")){
+                            String dtImage = jsonNode.get("digitalTwinImage").asText();
+                            String dtId = jsonNode.get("digitalTwinId").asText();
+                            String ownerId = jsonNode.get("ownerId").asText();
+                            String dtPort = jsonNode.get("digitalTwinPort").asText();
+                            List<String> tagsList = new ArrayList<>();
+                            for (JsonNode tagNode : jsonNode.get("tags")) {
+                                tagsList.add(tagNode.asText());
                             }
-                        });
-                    });
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    exchange.setStatusCode(500); // Internal Server Error
-                    exchange.getResponseSender().send("Errore durante l'elaborazione della richiesta");
-                }
+
+                            System.out.println("Image name: " + dtImage);
+
+                            dockerClient.pullImageCmd(dtImage)
+                                    .exec(new PullImageResultCallback())
+                                    .awaitCompletion();
+
+                            CreateContainerResponse container = dockerClient.createContainerCmd(dtImage)
+                                    .exec();
+
+                            // Avvio del container
+                            dockerClient.startContainerCmd(container.getId()).exec();
+                            requestState = "FULLFILLED";
+
+                            // Stampa dell'ID del container appena creato
+                            /*exchange.getResponseSender().send("Container ID: " + container.getId());*/
+                            System.out.println("Container ID: " + container.getId());
+
+                            requestedDigitalTwins.put(dtId, new DigitalTwinInfo(dtImage, dtId, ownerId, tagsList, dtPort));
+
+                            Map<String, Object> deploymentDescriptor = new LinkedHashMap<>();
+                            deploymentDescriptor.put("digitalTwinImage", dtImage);
+                            deploymentDescriptor.put("digitalTwinId", dtId);
+                            deploymentDescriptor.put("ownerId", ownerId);
+                            deploymentDescriptor.put("tags", tagsList);
+                            deploymentDescriptor.put("digitalTwinPort", dtPort);
+
+                            jsonResponse.put("containerId", container.getId());
+                            jsonResponse.put("deploymentDescriptor", deploymentDescriptor);
+                            jsonResponse.put("requestState", requestState);
+                            jsonResponse.put("digitalTwinURI", "http://localhost:" + dtPort + "/" + dtId);
+                        }
+                        else {
+                            String group = jsonNode.get("group").asText();
+                            for (DigitalTwinInfo dt : requestedDigitalTwins.values()) {
+                                jsonResponse.put("deploymentDescriptor", dt.getTagsList());
+                                if(dt.getTagsList().contains(group)){
+                                    Map<String, Object> deploymentDescriptor = new LinkedHashMap<>();
+                                    deploymentDescriptor.put("digitalTwinImage", dt.getDtImage());
+                                    deploymentDescriptor.put("digitalTwinId", dt.getDtId());
+                                    deploymentDescriptor.put("ownerId", dt.getOwnerId());
+                                    deploymentDescriptor.put("tags", dt.getTagsList());
+                                    deploymentDescriptor.put("digitalTwinPort", dt.getDtPort());
+                                    jsonResponse.put("deploymentDescriptor", deploymentDescriptor);
+                                }
+                            }
+                        }
+                            String jsonString = objectMapper.writeValueAsString(jsonResponse);
+
+                        exchange.getResponseSender().send(jsonString);
+                    } catch (Exception e) {
+                        requestState = "REFUSED";
+                        e.printStackTrace();
+                        exchange.setStatusCode(500); // Internal Server Error
+                        exchange.getResponseSender().send("Errore durante l'elaborazione della richiesta");
+                    }
+                }));
+            } catch (Exception e) {
+                e.printStackTrace();
+                exchange.setStatusCode(500); // Internal Server Error
+                exchange.getResponseSender().send("Errore durante l'elaborazione della richiesta");
             }
         };
 
