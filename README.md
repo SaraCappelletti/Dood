@@ -11,7 +11,9 @@ If you are using Docker for Windows, for Mac or Docker usually is tcp://localhos
 
 If you are using Linux, usually Docker is available at unix:///var/run/docker.sock.
 
-This program waits for a POST HTTP request to http://localhost:8081/create-container with this body
+This program waits for two different POST HTTP request to http://localhost:8081/create-container 
+
+To create a new dt use this body
 {
     "digitalTwinImage": "saracappelletti/digital-twin-with-configuration-files",
     "digitalTwinId": "termometro",
@@ -20,5 +22,9 @@ This program waits for a POST HTTP request to http://localhost:8081/create-conta
     "digitalTwinPort": 3000
 }
 
+To see which dt you have already create you can search them by tag with this body
+{
+    "group": "device",
+}
 
 If you want to restart the container, once you have already created it, you can do it with "docker start -ai containerid"
