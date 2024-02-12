@@ -93,26 +93,13 @@ public class App {
                                     jsonResponse.put("serviceId", serviceId);
                                     jsonResponse.put("requestState", requestState);
                                     jsonResponse.put("digitalTwinURI", "http://localhost:" + availablePort + "/" + dtId);
-                                    /*//Getting the real mapped port
-                                    Service service = dockerClient.inspectServiceCmd(serviceId).exec();
-                                    if (service.getSpec().getEndpointSpec() != null) {
-                                        List<PortConfig> portConfigs = service.getSpec().getEndpointSpec().getPorts();
-                                        if (portConfigs != null && !portConfigs.isEmpty()) {
-                                            int mappedPort = portConfigs.get(0).getPublishedPort();
-                                            jsonResponse.put("mappedPort", mappedPort);
-                                        } else {
-                                            exchange.getResponseSender().send("No porte configurate");
-                                        }
-                                    } else {
-                                        exchange.getResponseSender().send("No endpoint");
-                                    }*/
+
                                 }
                                 else {
                                     //I am looking at the already created dts
                                     String group = jsonNode.get("group").asText();
                                     List<Map<String, Object>> deploymentDescriptors = new ArrayList<>();
                                     for (DigitalTwinInfo dt : requestedDigitalTwins.values()) {
-                                        //jsonResponse.put("deploymentDescriptor", dt.getTags());
                                         if (dt.getTags().contains(group)) {
                                             Map<String, Object> deploymentDescriptor = new LinkedHashMap<>();
                                             deploymentDescriptor.put("digitalTwinImage", dt.getDtImage());
@@ -154,6 +141,7 @@ public class App {
     private static int findAvailablePort(int desiredPort, DockerClient dockerClient) {
         int port = desiredPort;
         while (!isPortAvailable(port, dockerClient)) {
+            //If the port is already in use I try the next one
             port++;
         }
         return port;
@@ -168,14 +156,13 @@ public class App {
                     List<PortConfig> portConfigs = endpointSpec.getPorts();
                     for (PortConfig portConfig : portConfigs) {
                         if (portConfig.getPublishedPort() == port) {
-                            return false; // La porta è già in uso da un servizio Docker
+                            return false; //The port is already used by a Docker service
                         }
                     }
                 }
             }
-            return true; // Nessun servizio Docker utilizza la porta
+            return true; // No Docker service is using the port
         } catch (Exception e) {
-            // Gestire eventuali eccezioni
             e.printStackTrace();
             return false;
         }
