@@ -3,6 +3,8 @@ Docker outside of docker
 
 You can download the image with "docker pull saracappelletti/dood"
 
+Before running the program be sure that you have docker swarm initialized with "docker swarm init"
+
 Create a new container using "docker run -e DOCKER_HOST=demon_docker_address -p 8081:8081 --name containername saracappelletti/dood"
 
 demon_docker_address needs to be changed with:
@@ -13,7 +15,7 @@ If you are using Linux, usually Docker is available at unix:///var/run/docker.so
 
 This program waits for two different POST HTTP request to http://localhost:8081/create-container 
 
-To create a new dt use this body
+To create a new service for your dt use this body
 {
     "digitalTwinImage": "saracappelletti/digital-twin-with-configuration-files",
     "digitalTwinId": "termometro",
@@ -21,6 +23,7 @@ To create a new dt use this body
     "tags": ["device"],
     "digitalTwinPort": 3000
 }
+Remember that the digitalTwinId must be unique
 
 To see which dt you have already create you can search them by tag with this body
 {
