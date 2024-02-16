@@ -95,6 +95,18 @@ public class App {
                                     jsonResponse.put("digitalTwinURI", "http://localhost:" + availablePort + "/" + dtId);
 
                                 }
+                                else if (jsonNode.has("digitalTwinId")) {
+                                    String dtIdToRemove = jsonNode.get("digitalTwinId").asText();
+                                    try {
+                                        dockerClient.removeServiceCmd(dtIdToRemove).exec();
+                                        System.out.println("Servizio " + dtIdToRemove + " rimosso con successo");
+                                        exchange.getResponseSender().send("Servizio " + dtIdToRemove + " rimosso con successo");
+                                        requestedDigitalTwins.remove(dtIdToRemove);
+                                    } catch (Exception e) {
+                                        System.err.println("Errore durante la rimozione del servizio " + dtIdToRemove + ": " + e.getMessage());
+                                    }
+
+                                }
                                 else {
                                     //I am looking at the already created dts
                                     String group = jsonNode.get("group").asText();

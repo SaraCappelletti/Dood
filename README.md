@@ -27,7 +27,12 @@ Remember that the digitalTwinId must be unique
 
 To see which dt you have already create you can search them by tag with this body
 {
-    "group": "device",
+    "group": "device"
+}
+
+To remove a service use this body with the digitalTwinId
+{
+    "digitalTwinId": "termometro"
 }
 
 If you want to restart the container, once you have already created it, you can do it with "docker start -ai containerid"
